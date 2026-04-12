@@ -1,0 +1,23 @@
+{
+  "displayName": "BizToGmail scheduler tick failure",
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "scheduler/tick returned 401 or 500",
+      "conditionMatchedLog": {
+        "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"biztogmail\" (textPayload:\"POST /scheduler/tick HTTP/1.1\\\" 401\" OR textPayload:\"POST /scheduler/tick HTTP/1.1\\\" 500\")"
+      }
+    }
+  ],
+  "enabled": true,
+  "alertStrategy": {
+    "notificationRateLimit": {
+      "period": "300s"
+    },
+    "autoClose": "1800s"
+  },
+  "documentation": {
+    "content": "Cloud Scheduler からの /scheduler/tick が失敗しています。token 不一致、Cloud Run 例外、Secret Manager / Cloud SQL 障害を確認してください。",
+    "mimeType": "text/markdown"
+  }
+}

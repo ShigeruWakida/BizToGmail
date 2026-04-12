@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BizToGmail Console</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon-mail.svg">
+  <style>
+    :root {
+      --page-bg: #fff4cf;
+      --panel-bg: #fff7dc;
+      --header-bg: #f7cc61;
+      --line: #ebc55b;
+      --text: #111111;
+      --muted: #665b3f;
+      --link: #0033cc;
+      --field-bg: #ffffff;
+      --field-border: #9f9f9f;
+      --button-bg: #f2f2f2;
+      --button-border: #9a9a9a;
+      --ok: #2b5f2f;
+      --error: #8c1f1f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #f5f5f5;
+      color: var(--text);
+      font-family: "MS PGothic", "Yu Gothic", sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    a {
+      color: var(--link);
+      text-decoration: underline;
+    }
+
+    .frame {
+      width: min(980px, calc(100% - 24px));
+      margin: 18px auto;
+      border: 1px solid #d6a941;
+      background: var(--panel-bg);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+    }
+
+    .heading {
+      padding: 8px 10px;
+      background: linear-gradient(#f9d775, var(--header-bg));
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .section {
+      padding: 12px 14px 16px;
+    }
+
+    .auth-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px 0;
+    }
+
+    .auth-text {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .workspace {
+      padding: 14px;
+    }
+
+    .account-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--line);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .account-title-text {
+      min-width: 0;
+    }
+
+    .button.secondary {
+      min-width: auto;
+      padding: 4px 10px;
+      font-weight: 400;
+    }
+
+    .group-box {
+      margin: 0 0 14px;
+      padding: 10px 12px 12px;
+      border: 1px solid #e2c46d;
+      background: #fffaf0;
+    }
+
+    .group-box legend {
+      padding: 0 6px;
+      font-weight: 700;
+      color: #5d4b1e;
+    }
+
+    .form-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .form-table th,
+    .form-table td {
+      vertical-align: middle;
+      padding: 5px 0;
+    }
+
+    .form-table th {
+      width: 150px;
+      padding-right: 10px;
+      font-weight: 400;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .form-table th.align-top {
+      vertical-align: top;
+      padding-top: 9px;
+    }
+
+    .inline-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .schedule-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .other-settings-row {
+      display: grid;
+      grid-template-columns: 112px auto 1fr;
+      align-items: center;
+      column-gap: 12px;
+      row-gap: 6px;
+    }
+
+    .other-settings-row .checkbox-line {
+      margin: 0;
+      padding-left: 0;
+      align-items: center;
+    }
+
+    .other-settings-row .checkbox-line input {
+      margin-top: 0;
+    }
+
+    .inline-row .checkbox-line {
+      margin: 0 0 0 10px;
+      padding-left: 0;
+      align-items: center;
+    }
+
+    .inline-row .checkbox-line input {
+      margin-top: 0;
+    }
+
+    .field,
+    .select,
+    .multiselect {
+      border: 1px solid var(--field-border);
+      background: var(--field-bg);
+      color: var(--text);
+      padding: 3px 5px;
+      font: inherit;
+    }
+
+    .field {
+      height: 27px;
+    }
+
+    .field.email,
+    .field.user,
+    .field.host {
+      width: min(100%, 294px);
+    }
+
+    .field.password {
+      width: min(100%, 294px);
+    }
+
+    .field.small,
+    .select.small {
+      width: 70px;
+    }
+
+    .pop-host-row {
+      display: grid;
+      grid-template-columns: minmax(180px, 294px) auto 70px;
+      gap: 8px;
+      align-items: center;
+      width: min(100%, 430px);
+    }
+
+    .pop-host-row .field.host {
+      width: 100%;
+    }
+
+    .hint {
+      margin-left: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .checkbox-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin: 7px 0;
+      padding-left: 150px;
+    }
+
+    .checkbox-line input {
+      margin-top: 3px;
+    }
+
+    .checkbox-copy {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .button {
+      min-width: 102px;
+      padding: 6px 12px;
+      border: 1px solid var(--button-border);
+      background: linear-gradient(#ffffff, var(--button-bg));
+      color: var(--text);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .button:active {
+      background: linear-gradient(var(--button-bg), #ffffff);
+    }
+
+    .button[disabled] {
+      cursor: default;
+      color: #777777;
+      background: #ececec;
+    }
+
+    .sidebar-box {
+      border: 1px solid #e4c26f;
+      background: #fff9e7;
+    }
+
+    .sidebar-head {
+      padding: 7px 10px;
+      background: #f4df9a;
+      border-bottom: 1px solid #e4c26f;
+      font-weight: 700;
+    }
+
+    .sidebar-body {
+      padding: 10px;
+    }
+
+    .status {
+      min-height: 56px;
+      white-space: pre-wrap;
+      color: var(--ok);
+    }
+
+    .status.error {
+      color: var(--error);
+    }
+
+    .account-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .account-card {
+      padding: 8px;
+      border: 1px solid #dfc780;
+      background: #fffef7;
+    }
+
+    .account-card strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .account-meta {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .account-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .account-actions .button {
+      min-width: 74px;
+      padding: 4px 8px;
+      font-weight: 400;
+    }
+
+    .locked {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    @media (max-width: 860px) {
+      .workspace {
+        padding: 12px;
+      }
+
+      .form-table th,
+      .form-table td {
+        display: block;
+        width: 100%;
+        text-align: left;
+      }
+
+      .form-table th {
+        padding-bottom: 2px;
+      }
+
+      .checkbox-line {
+        padding-left: 0;
+      }
+
+      .pop-host-row {
+        grid-template-columns: 1fr;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="heading">メール アカウントを追加/編集</div>
+    <div class="auth-bar">
+      <div class="auth-text" id="authStatus">Google ログイン状態を確認しています...</div>
+      <div class="inline-row">
+        <button class="button" id="loginBtn" type="button">Google でログイン</button>
+        <button class="button" id="logoutBtn" type="button" style="display:none;">ログアウト</button>
+      </div>
+    </div>
+    <div class="workspace">
+      <section id="editorPane">
+        <div class="account-title">
+          <div class="account-title-text" id="accountTitle">メール アドレス: 未設定</div>
+          <button class="button secondary" id="clearBtn" type="button">入力をクリア</button>
+        </div>
+        <fieldset class="group-box">
+          <legend>共通設定</legend>
+          <table class="form-table">
+            <tr>
+              <th>メール アドレス:</th>
+              <td><input id="email" class="field email" placeholder="user@example.com"></td>
+            </tr>
+          </table>
+        </fieldset>
+
+        <fieldset class="group-box">
+          <legend>SMTP設定</legend>
+          <table class="form-table">
+            <tr>
+              <th>サーバー:</th>
+              <td>
+                <div class="pop-host-row">
+                  <input id="smtpHost" class="field host" placeholder="smtp.example.com">
+                  <span>ポート:</span>
+                  <select id="smtpPort" class="select small">
+                    <option value="465">465</option>
+                    <option value="587">587</option>
+                    <option value="25">25</option>
+                  </select>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th>ユーザー:</th>
+              <td><input id="smtpUsername" class="field user" placeholder="SMTP ユーザー"></td>
+            </tr>
+            <tr>
+              <th>パスワード:</th>
+              <td><input id="smtpPassword" class="field password" type="password" placeholder="SMTP パスワード"></td>
+            </tr>
+          </table>
+
+          <label class="checkbox-line">
+            <input id="smtpUseSsl" type="checkbox" checked>
+            <span class="checkbox-copy">
+              <span>SMTP 転送にセキュリティで保護された接続（SSL）を使用する。</span>
+            </span>
+          </label>
+        </fieldset>
+
+        <fieldset class="group-box">
+          <legend>POP/IMAP設定</legend>
+          <table class="form-table">
+            <tr>
+              <th>POP/IMAP:</th>
+              <td>
+                <div class="inline-row">
+                  <select id="sourceProtocol" class="select">
+                    <option value="pop3">POP3</option>
+                    <option value="imap">IMAP</option>
+                  </select>
+                  <input id="sourceFolder" class="field user" placeholder="IMAP フォルダ。省略時は INBOX">
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th class="align-top">サーバー:</th>
+              <td>
+                <div class="pop-host-row">
+                  <input id="popHost" class="field host" placeholder="省略時は SMTP サーバー">
+                  <span>ポート:</span>
+                  <select id="popPort" class="select small">
+                  </select>
+                </div>
+                <div class="hint" id="sourcePortHint">POP3 推奨: 995 / 110</div>
+              </td>
+            </tr>
+            <tr>
+              <th>ユーザー:</th>
+              <td><input id="username" class="field user" placeholder="省略時は SMTP ユーザー"></td>
+            </tr>
+            <tr>
+              <th>パスワード:</th>
+              <td><input id="popPassword" class="field password" type="password" placeholder="省略時は SMTP パスワード"></td>
+            </tr>
+          </table>
+
+          <label class="checkbox-line">
+            <input id="useSsl" type="checkbox" checked>
+            <span class="checkbox-copy">
+              <span>メールの取得にセキュリティで保護された接続（SSL）を使用する。</span>
+            </span>
+          </label>
+
+          <label class="checkbox-line">
+            <input id="leaveCopy" type="checkbox" checked>
+            <span class="checkbox-copy">
+              <span>取得したメッセージのコピーをサーバーに残す。</span>
+            </span>
+          </label>
+        </fieldset>
+
+        <fieldset class="group-box">
+          <legend>その他設定</legend>
+          <table class="form-table">
+            <tr>
+              <th>確認間隔:</th>
+              <td>
+                <div class="other-settings-row">
+                  <div class="schedule-row">
+                    <input id="interval" class="field small" type="number" value="5" min="1">
+                    <span>分</span>
+                  </div>
+                  <label class="checkbox-line">
+                    <input id="enabled" type="checkbox" checked>
+                    <span class="checkbox-copy">
+                      <span>定期的に確認する</span>
+                    </span>
+                  </label>
+                  <span></span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th>削除日数:</th>
+              <td>
+                <div class="other-settings-row">
+                  <input id="deleteAfterDays" class="field small" type="number" min="1" placeholder="-">
+                  <label class="checkbox-line">
+                    <input id="disableDeleteAfterDays" type="checkbox" checked>
+                    <span class="checkbox-copy">
+                      <span>削除しない</span>
+                    </span>
+                  </label>
+                  <span class="hint">指定日数経過後に サーバーから削除</span>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </fieldset>
+
+        <div class="actions">
+          <button class="button" id="createBtn" type="button">登録</button>
+        </div>
+      </section>
+
+      <div class="sidebar-box" style="margin-top: 18px;">
+        <div class="sidebar-head">保存済みアカウント</div>
+        <div class="sidebar-body">
+          <div id="accounts" class="account-list"></div>
+        </div>
+      </div>
+
+      <div class="sidebar-box" style="margin-top: 14px;">
+        <div class="sidebar-head">実行結果</div>
+        <div class="sidebar-body">
+          <div class="status" id="status">Ready.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let editingAccountId = null;
+    let currentGoogleUser = null;
+    const statusBox = document.getElementById("status");
+    const accountsBox = document.getElementById("accounts");
+    const emailBox = document.getElementById("email");
+    const usernameBox = document.getElementById("username");
+    const smtpUsernameBox = document.getElementById("smtpUsername");
+    const sourceProtocolBox = document.getElementById("sourceProtocol");
+    const sourcePortBox = document.getElementById("popPort");
+    const sourcePortHint = document.getElementById("sourcePortHint");
+    const authStatusBox = document.getElementById("authStatus");
+    const editorPane = document.getElementById("editorPane");
+    const jstDateTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    });
+
+    function setStatus(message, isError = false) {
+      statusBox.textContent = message;
+      statusBox.classList.toggle("error", isError);
+    }
+
+    function setAuthenticatedUser(user) {
+      currentGoogleUser = user || null;
+      const loginBtn = document.getElementById("loginBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (currentGoogleUser) {
+        authStatusBox.textContent = `Google ログイン中: ${currentGoogleUser.email}`;
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "";
+        editorPane.classList.remove("locked");
+      } else {
+        authStatusBox.textContent = "Google ログインが必要です。";
+        loginBtn.style.display = "";
+        logoutBtn.style.display = "none";
+        editorPane.classList.add("locked");
+      }
+    }
+
+    async function withButtonBusy(button, busyText, fn) {
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = busyText;
+      try {
+        return await fn();
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    function syncIdentityFields() {
+      const email = emailBox.value.trim();
+      if (document.activeElement !== smtpUsernameBox || !smtpUsernameBox.value.trim()) {
+        smtpUsernameBox.value = email;
+      }
+      document.getElementById("accountTitle").textContent = `メール アドレス: ${email || "未設定"}`;
+      document.getElementById("createBtn").textContent = editingAccountId ? "変更を保存" : "登録";
+    }
+
+    function clearForm(resetStatus = true) {
+      editingAccountId = null;
+      emailBox.value = "";
+      sourceProtocolBox.value = "pop3";
+      document.getElementById("sourceFolder").value = "";
+      usernameBox.value = "";
+      document.getElementById("popPassword").value = "";
+      document.getElementById("smtpHost").value = "";
+      document.getElementById("smtpPort").value = "465";
+      document.getElementById("smtpUsername").value = "";
+      document.getElementById("smtpPassword").value = "";
+      document.getElementById("popHost").value = "";
+      document.getElementById("interval").value = "5";
+      document.getElementById("leaveCopy").checked = true;
+      document.getElementById("useSsl").checked = true;
+      document.getElementById("smtpUseSsl").checked = true;
+      document.getElementById("enabled").checked = true;
+      document.getElementById("deleteAfterDays").value = "";
+      document.getElementById("disableDeleteAfterDays").checked = true;
+      syncDeleteAfterDaysState();
+      syncIdentityFields();
+      if (resetStatus) {
+        setStatus("Ready.");
+      }
+    }
+
+    function loadAccountIntoForm(account) {
+      editingAccountId = account.id;
+      emailBox.value = account.email || "";
+      sourceProtocolBox.value = account.source_protocol || "pop3";
+      document.getElementById("sourceFolder").value = account.source_folder || "";
+      usernameBox.value = account.source_username || account.email || "";
+      document.getElementById("popPassword").value = "";
+      document.getElementById("smtpHost").value = account.smtp_host || "";
+      document.getElementById("smtpPort").value = String(account.smtp_port || 465);
+      document.getElementById("smtpUsername").value = account.smtp_username || "";
+      document.getElementById("smtpPassword").value = "";
+      document.getElementById("popHost").value = account.pop_host || "";
+      document.getElementById("interval").value = String(account.check_interval_minutes || 5);
+      document.getElementById("leaveCopy").checked = !!account.leave_copy;
+      document.getElementById("useSsl").checked = !!account.use_ssl;
+      document.getElementById("smtpUseSsl").checked = !!account.smtp_use_ssl;
+      document.getElementById("enabled").checked = !!account.enabled;
+      document.getElementById("deleteAfterDays").value = account.delete_after_days ?? "";
+      document.getElementById("disableDeleteAfterDays").checked = account.delete_after_days == null;
+      syncDeleteAfterDaysState();
+      syncSourceDefaults();
+      syncIdentityFields();
+      setStatus(`${account.email} を編集中です。`);
+    }
+
+    function syncDeleteAfterDaysState() {
+      const disableBox = document.getElementById("disableDeleteAfterDays");
+      const deleteBox = document.getElementById("deleteAfterDays");
+      const disabled = disableBox.checked;
+      deleteBox.disabled = disabled;
+      if (disabled) {
+        deleteBox.value = "";
+      }
+    }
+
+    function syncSourceDefaults() {
+      const isImap = sourceProtocolBox.value === "imap";
+      const currentPort = sourcePortBox.value;
+      const options = isImap
+        ? [
+            { value: "993", label: "993" },
+            { value: "143", label: "143" }
+          ]
+        : [
+            { value: "995", label: "995" },
+            { value: "110", label: "110" }
+          ];
+      sourcePortBox.innerHTML = options
+        .map((option) => `<option value="${option.value}">${option.label}</option>`)
+        .join("");
+      const allowedPorts = new Set(options.map((option) => option.value));
+      sourcePortBox.value = allowedPorts.has(currentPort) ? currentPort : options[0].value;
+      sourcePortHint.textContent = isImap ? "IMAP 推奨: 993 / 143" : "POP3 推奨: 995 / 110";
+      document.getElementById("sourceFolder").disabled = !isImap;
+      if (!isImap) {
+        document.getElementById("sourceFolder").value = "";
+      }
+    }
+
+    async function apiFetch(path, options = {}) {
+      const res = await fetch(path, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        }
+      });
+      const text = await res.text();
+      let body = {};
+      try {
+        body = text ? JSON.parse(text) : {};
+      } catch {}
+      if (!res.ok) {
+        let detail = body.detail || text || `HTTP ${res.status}`;
+        if (Array.isArray(detail)) {
+          detail = detail.map((item) => {
+            if (typeof item === "string") {
+              return item;
+            }
+            if (item && typeof item === "object") {
+              const loc = Array.isArray(item.loc) ? item.loc.join(".") : "";
+              return [loc, item.msg].filter(Boolean).join(": ");
+            }
+            return String(item);
+          }).join("\n");
+        } else if (detail && typeof detail === "object") {
+          detail = JSON.stringify(detail, null, 2);
+        }
+        throw new Error(detail);
+      }
+      return body;
+    }
+
+    function formatTimestampJst(value) {
+      if (!value) {
+        return "-";
+      }
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) {
+        return value;
+      }
+      return `${jstDateTimeFormatter.format(parsed)} JST`;
+    }
+
+    function renderAccounts(accounts) {
+      if (!accounts.length) {
+        accountsBox.innerHTML = "<div class=\"account-card\">アカウントはまだありません。</div>";
+        return;
+      }
+
+      accountsBox.innerHTML = "";
+      accounts.forEach((account) => {
+        const card = document.createElement("div");
+        card.className = "account-card";
+        card.innerHTML = `
+          <strong>${account.email}</strong>
+          <div class="account-meta">Source: ${(account.source_protocol || "pop3").toUpperCase()} ${account.pop_host}:${account.pop_port} / ${account.use_ssl ? "SSL" : "Plain"}${account.source_folder ? ` / ${account.source_folder}` : ""}</div>
+          <div class="account-meta">SMTP: ${(account.smtp_host || account.pop_host)}:${account.smtp_port} / ${account.smtp_use_ssl ? "SSL" : "Plain"}</div>
+          <div class="account-meta">Next: ${formatTimestampJst(account.next_check_at)}</div>
+          <div class="account-actions">
+            <button class="button" data-action="edit" type="button">編集</button>
+            <button class="button" data-action="toggle" type="button">${account.enabled ? "定期確認を停止" : "定期確認を開始"}</button>
+            <button class="button" data-action="run" type="button">今すぐ実行</button>
+            <button class="button" data-action="delete" type="button">削除</button>
+          </div>
+        `;
+
+        card.querySelector('[data-action="edit"]').addEventListener("click", () => {
+          loadAccountIntoForm(account);
+        });
+
+        card.querySelector('[data-action="toggle"]').addEventListener("click", async (event) => {
+          const button = event.currentTarget;
+          await withButtonBusy(button, "更新中...", async () => {
+            try {
+              setStatus(`${account.email} を更新しています...`);
+              const updated = await apiFetch(`/accounts/${account.id}`, {
+                method: "PATCH",
+                body: JSON.stringify({ enabled: !account.enabled })
+              });
+              setStatus(`Updated ${updated.email}`);
+              await loadAccounts();
+            } catch (err) {
+              setStatus(String(err), true);
+            }
+          });
+        });
+
+        card.querySelector('[data-action="run"]').addEventListener("click", async (event) => {
+          const button = event.currentTarget;
+          await withButtonBusy(button, "実行中...", async () => {
+            try {
+              setStatus(`${account.email} を実行しています...`);
+              const result = await apiFetch(`/accounts/${account.id}/run`, { method: "POST" });
+              setStatus((result.events || []).join("\n") || JSON.stringify(result.summary, null, 2));
+              await loadAccounts();
+            } catch (err) {
+              setStatus(String(err), true);
+            }
+          });
+        });
+
+        card.querySelector('[data-action="delete"]').addEventListener("click", async (event) => {
+          const button = event.currentTarget;
+          if (!window.confirm(`${account.email} を削除しますか？`)) {
+            return;
+          }
+          await withButtonBusy(button, "削除中...", async () => {
+            try {
+              setStatus(`${account.email} を削除しています...`);
+              await apiFetch(`/accounts/${account.id}`, { method: "DELETE" });
+              setStatus(`Deleted ${account.email}`);
+              await loadAccounts();
+            } catch (err) {
+              setStatus(String(err), true);
+            }
+          });
+        });
+
+        accountsBox.appendChild(card);
+      });
+    }
+
+    async function loadAccounts() {
+      try {
+        const accounts = await apiFetch("/accounts");
+        renderAccounts(accounts);
+      } catch (err) {
+        accountsBox.innerHTML = "";
+        setStatus(String(err), true);
+      }
+    }
+
+    async function saveAccount() {
+      const isEditing = !!editingAccountId;
+      const payload = {
+        email: emailBox.value.trim(),
+        source_username: usernameBox.value.trim() || null,
+        source_protocol: sourceProtocolBox.value,
+        source_folder: document.getElementById("sourceFolder").value.trim() || null,
+        pop_host: document.getElementById("popHost").value.trim() || null,
+        pop_password: document.getElementById("popPassword").value || null,
+        pop_port: Number(sourcePortBox.value || 995),
+        use_ssl: document.getElementById("useSsl").checked,
+        smtp_host: document.getElementById("smtpHost").value.trim() || null,
+        smtp_port: Number(document.getElementById("smtpPort").value || 465),
+        smtp_use_ssl: document.getElementById("smtpUseSsl").checked,
+        smtp_username: document.getElementById("smtpUsername").value.trim() || null,
+        smtp_password: document.getElementById("smtpPassword").value || null,
+        leave_copy: document.getElementById("leaveCopy").checked,
+        delete_after_days: document.getElementById("deleteAfterDays").value ? Number(document.getElementById("deleteAfterDays").value) : null,
+        check_interval_minutes: Number(document.getElementById("interval").value || 5),
+        enabled: document.getElementById("enabled").checked
+      };
+
+      if (!payload.email) {
+        setStatus("メール アドレスを入力してください。", true);
+        return;
+      }
+      if (!payload.smtp_host) {
+        setStatus("SMTP サーバーを入力してください。", true);
+        return;
+      }
+      if (!payload.smtp_username) {
+        setStatus("SMTP ユーザーを入力してください。", true);
+        return;
+      }
+      if (!editingAccountId && !payload.smtp_password) {
+        setStatus("SMTP パスワードを入力してください。", true);
+        return;
+      }
+      if (!currentGoogleUser) {
+        setStatus("Google ログインが必要です。", true);
+        return;
+      }
+
+      if (!payload.pop_host) {
+        delete payload.pop_host;
+      }
+      if (!payload.source_username) {
+        delete payload.source_username;
+      }
+      if (editingAccountId && !payload.pop_password) {
+        delete payload.pop_password;
+      }
+      if (editingAccountId && !payload.smtp_password) {
+        delete payload.smtp_password;
+      }
+
+      try {
+        setStatus(`${isEditing ? "更新" : "登録"}しています...`);
+        const saved = await apiFetch(isEditing ? `/accounts/${editingAccountId}` : "/accounts", {
+          method: isEditing ? "PATCH" : "POST",
+          body: JSON.stringify(payload)
+        });
+        await loadAccounts();
+        clearForm(false);
+        setStatus(`${isEditing ? "更新しました" : "登録しました"}: ${saved.email}`);
+      } catch (err) {
+        setStatus(String(err), true);
+      }
+    }
+
+    emailBox.addEventListener("input", syncIdentityFields);
+    sourceProtocolBox.addEventListener("change", syncSourceDefaults);
+    document.getElementById("disableDeleteAfterDays").addEventListener("change", syncDeleteAfterDaysState);
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      window.location.href = "/auth/login";
+    });
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      window.location.href = "/auth/logout";
+    });
+    document.getElementById("createBtn").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      await withButtonBusy(button, editingAccountId ? "更新中..." : "登録中...", saveAccount);
+    });
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      if (!window.confirm("入力内容をクリアしますか？")) {
+        return;
+      }
+      clearForm();
+    });
+
+    async function loadSession() {
+      try {
+        const session = await apiFetch("/auth/session");
+        setAuthenticatedUser(session.user);
+        return !!session.authenticated;
+      } catch (err) {
+        setAuthenticatedUser(null);
+        setStatus(String(err), true);
+        return false;
+      }
+    }
+
+    syncIdentityFields();
+    syncSourceDefaults();
+    syncDeleteAfterDaysState();
+    loadSession().then((authenticated) => {
+      if (authenticated) {
+        loadAccounts();
+      } else {
+        accountsBox.innerHTML = "<div class=\"account-card\">Google ログイン後にアカウントを表示します。</div>";
+      }
+    });
+  </script>
+</body>
+</html>

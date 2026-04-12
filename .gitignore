@@ -1,0 +1,26 @@
+# Local credentials and tokens
+credentials.json
+token.json
+.env
+google_oidc_*.json
+
+# Local state and logs
+state.db
+logs/
+run/
+tests/.tmp/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# VS Code
+.vscode/

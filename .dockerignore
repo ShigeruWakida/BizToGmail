@@ -1,0 +1,16 @@
+.git
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+credentials.json
+token.json
+google_oidc_web_client.json
+state.db
+logs
+run
+tests
+*.png
+*.pdf
