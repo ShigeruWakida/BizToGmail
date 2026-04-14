@@ -3,6 +3,7 @@ credentials.json
 token.json
 .env
 google_oidc_*.json
+.gcloud/
 
 # Local state and logs
 state.db
@@ -21,6 +22,7 @@ venv/
 .venv/
 pip-log.txt
 pip-delete-this-directory.txt
+.external/
 
 # VS Code
 .vscode/

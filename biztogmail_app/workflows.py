@@ -132,6 +132,7 @@ def run_smtp_forward_workflow(
                     client.quit()
                 except Exception:
                     client.close()
+        con.close()
 
     summary = {"imported": imported, "skipped": skipped, "errors": errors}
     logger.append(f"smtp-forward done imported={imported} skipped={skipped} errors={errors}")
