@@ -84,11 +84,18 @@ def get_engine() -> Engine:
         url = get_database_url()
         if url.startswith("sqlite:"):
             connect_args = {"check_same_thread": False}
+            _ENGINE = create_engine(url, future=True, connect_args=connect_args)
         elif _needs_ssl(url):
             connect_args = {"ssl_context": ssl.create_default_context()}
+            _ENGINE = create_engine(
+                url,
+                future=True,
+                connect_args=connect_args,
+                pool_pre_ping=True,
+                pool_recycle=300,
+            )
         else:
-            connect_args = {}
-        _ENGINE = create_engine(url, future=True, connect_args=connect_args)
+            _ENGINE = create_engine(url, future=True, pool_pre_ping=True)
     return _ENGINE
 
 
