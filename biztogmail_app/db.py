@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import ssl
 from pathlib import Path
 
 from sqlalchemy import Column, Integer, MetaData, String, Table, Text, create_engine, inspect, text
@@ -65,14 +66,28 @@ _ENGINE: Engine | None = None
 
 
 def get_database_url() -> str:
-    return os.environ.get("DATABASE_URL") or f"sqlite:///{Path(DB_FILE).resolve().as_posix()}"
+    url = os.environ.get("DATABASE_URL") or f"sqlite:///{Path(DB_FILE).resolve().as_posix()}"
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+pg8000://", 1)
+    if "pg8000" in url:
+        url = url.split("?sslmode=")[0]
+    return url
+
+
+def _needs_ssl(url: str) -> bool:
+    return "pg8000" in url and "/cloudsql/" not in url
 
 
 def get_engine() -> Engine:
     global _ENGINE
     if _ENGINE is None:
         url = get_database_url()
-        connect_args = {"check_same_thread": False} if url.startswith("sqlite:") else {}
+        if url.startswith("sqlite:"):
+            connect_args = {"check_same_thread": False}
+        elif _needs_ssl(url):
+            connect_args = {"ssl_context": ssl.create_default_context()}
+        else:
+            connect_args = {}
         _ENGINE = create_engine(url, future=True, connect_args=connect_args)
     return _ENGINE
 
