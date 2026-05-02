@@ -1,0 +1,11 @@
+[Unit]
+Description=BizToGmail Scheduler Tick
+After=network.target
+
+[Service]
+Type=oneshot
+User=biztogmail
+Group=biztogmail
+WorkingDirectory=/opt/biztogmail
+EnvironmentFile=/opt/biztogmail/.env
+ExecStart=/opt/biztogmail/.venv/bin/python biztogmail.py scheduler --once

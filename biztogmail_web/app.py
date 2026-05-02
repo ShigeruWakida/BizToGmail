@@ -148,12 +148,16 @@ def create_account(request: AccountCreate, http_request: Request):
     payload["destination_email"] = user["email"]
     payload["secret_ref"] = payload.get("secret_ref") or build_source_secret_ref(source_username)
     payload["smtp_secret_ref"] = payload.get("smtp_secret_ref") or build_smtp_secret_ref(smtp_username)
-    if not payload["secret_ref"] or not payload["smtp_secret_ref"]:
-        raise HTTPException(status_code=400, detail="GCP project is not configured")
-    _store_secret_or_raise(payload["secret_ref"], source_password, "POP/IMAP パスワード")
-    _store_secret_or_raise(payload["smtp_secret_ref"], smtp_password, "SMTP パスワード")
-    payload["pop_password"] = None
-    payload["smtp_password"] = None
+    if payload["secret_ref"] and payload["smtp_secret_ref"]:
+        _store_secret_or_raise(payload["secret_ref"], source_password, "POP/IMAP パスワード")
+        _store_secret_or_raise(payload["smtp_secret_ref"], smtp_password, "SMTP パスワード")
+        payload["pop_password"] = None
+        payload["smtp_password"] = None
+    else:
+        payload["pop_password"] = source_password
+        payload["smtp_password"] = smtp_password
+        payload["secret_ref"] = None
+        payload["smtp_secret_ref"] = None
     account = create_saved_account(**payload)
     return AccountResponse(**account)
 
@@ -177,24 +181,21 @@ def patch_account(account_id: int, request: AccountUpdate, http_request: Request
         updates["pop_host"] = updates.get("smtp_host", current.get("smtp_host"))
     if updates.get("pop_password"):
         secret_ref = current.get("secret_ref") or build_source_secret_ref(source_username)
-        if not secret_ref:
-            raise HTTPException(status_code=400, detail="GCP project is not configured")
-        _store_secret_or_raise(secret_ref, updates["pop_password"], "POP/IMAP パスワード")
-        updates["secret_ref"] = secret_ref
-        updates["pop_password"] = None
+        if secret_ref:
+            _store_secret_or_raise(secret_ref, updates["pop_password"], "POP/IMAP パスワード")
+            updates["secret_ref"] = secret_ref
+            updates["pop_password"] = None
     elif updates.get("smtp_password") and not current.get("secret_ref"):
         secret_ref = build_source_secret_ref(source_username)
-        if not secret_ref:
-            raise HTTPException(status_code=400, detail="GCP project is not configured")
-        _store_secret_or_raise(secret_ref, updates["smtp_password"], "POP/IMAP パスワード")
-        updates["secret_ref"] = secret_ref
+        if secret_ref:
+            _store_secret_or_raise(secret_ref, updates["smtp_password"], "POP/IMAP パスワード")
+            updates["secret_ref"] = secret_ref
     if updates.get("smtp_password"):
         smtp_secret_ref = current.get("smtp_secret_ref") or build_smtp_secret_ref(smtp_username)
-        if not smtp_secret_ref:
-            raise HTTPException(status_code=400, detail="GCP project is not configured")
-        _store_secret_or_raise(smtp_secret_ref, updates["smtp_password"], "SMTP パスワード")
-        updates["smtp_secret_ref"] = smtp_secret_ref
-        updates["smtp_password"] = None
+        if smtp_secret_ref:
+            _store_secret_or_raise(smtp_secret_ref, updates["smtp_password"], "SMTP パスワード")
+            updates["smtp_secret_ref"] = smtp_secret_ref
+            updates["smtp_password"] = None
     updates.pop("destination_email", None)
     account = update_saved_account(account_id, updates)
     return AccountResponse(**account)

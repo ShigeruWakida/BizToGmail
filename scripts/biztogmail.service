@@ -1,0 +1,16 @@
+[Unit]
+Description=BizToGmail Web UI
+After=network.target
+
+[Service]
+Type=simple
+User=biztogmail
+Group=biztogmail
+WorkingDirectory=/opt/biztogmail
+EnvironmentFile=/opt/biztogmail/.env
+ExecStart=/opt/biztogmail/.venv/bin/uvicorn biztogmail_web.app:app --host 127.0.0.1 --port 8080
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

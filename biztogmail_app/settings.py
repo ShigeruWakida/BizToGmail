@@ -16,9 +16,11 @@ def configure_pop3_password_env():
         return os.environ["POP3_PASSWORD"]
     return None
 def get_gcp_project_id():
+    explicit = os.environ.get("BIZTOGMAIL_GCP_PROJECT")
+    if explicit is not None:
+        return explicit or None
     return (
-        os.environ.get("BIZTOGMAIL_GCP_PROJECT")
-        or os.environ.get("GOOGLE_CLOUD_PROJECT")
+        os.environ.get("GOOGLE_CLOUD_PROJECT")
         or os.environ.get("GCP_PROJECT")
         or _get_gcloud_config_project()
     )
