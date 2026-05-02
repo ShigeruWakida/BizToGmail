@@ -64,6 +64,7 @@ python biztogmail.py scheduler --once
 - DB supports both PostgreSQL (production via `DATABASE_URL`) and SQLite (local dev via `state.db`)
 - `db.py` includes inline migrations for schema evolution (ALTER TABLE additions)
 - `db.py` automatically enables SSL for pg8000 connections to external PostgreSQL (e.g. Neon), but not for Cloud SQL unix socket connections
+- For non-SQLite DB connections, `pool_pre_ping=True` and `pool_recycle=300` are enabled. This is required for Neon free tier whose compute auto-suspends after inactivity and breaks idle connections
 
 ## Coding Conventions
 
