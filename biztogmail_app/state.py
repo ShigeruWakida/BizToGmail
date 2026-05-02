@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.engine import Connection
 
@@ -19,6 +19,20 @@ def uidl_seen(con: Connection, uidl: str) -> bool:
         {"uidl": uidl},
     ).first()
     return row is not None
+
+
+def uidls_seen(con: Connection, uidls: list[str], *, chunk_size: int = 1000) -> set[str]:
+    if not uidls:
+        return set()
+    seen: set[str] = set()
+    stmt = text(
+        "SELECT uidl FROM messages WHERE uidl IN :uidls AND status = 'imported'"
+    ).bindparams(bindparam("uidls", expanding=True))
+    for i in range(0, len(uidls), chunk_size):
+        chunk = uidls[i : i + chunk_size]
+        rows = con.execute(stmt, {"uidls": chunk}).all()
+        seen.update(row[0] for row in rows)
+    return seen
 
 
 def uidl_mark_imported(con: Connection, uidl: str, gmail_id: str | None):
@@ -300,6 +314,7 @@ def _account_row_to_dict(row):
 __all__ = [
     "ensure_db",
     "uidl_seen",
+    "uidls_seen",
     "uidl_mark_imported",
     "list_accounts",
     "get_account",

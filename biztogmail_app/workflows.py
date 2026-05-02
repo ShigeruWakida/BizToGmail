@@ -8,7 +8,7 @@ from .logging_utils import RunLogger
 from .pop3_client import pop_connect, pop_fetch_raw, pop_uidl_list
 from .services import evaluate_deletion, select_pending_entries
 from .smtp_client import send_raw_via_smtp
-from .state import ensure_db, uidl_mark_imported, uidl_seen
+from .state import ensure_db, uidl_mark_imported, uidls_seen
 
 
 def run_smtp_forward_workflow(
@@ -51,9 +51,11 @@ def run_smtp_forward_workflow(
         else:
             client = pop_connect(host, port, use_ssl, user, password)
             entries = pop_uidl_list(client)
+        all_keys = [_source_message_key(normalized_protocol, mailbox, source_id) for _, source_id in entries]
+        seen_keys = uidls_seen(con, all_keys)
         selections = select_pending_entries(
             entries,
-            lambda source_id: uidl_seen(con, _source_message_key(normalized_protocol, mailbox, source_id)),
+            lambda source_id: _source_message_key(normalized_protocol, mailbox, source_id) in seen_keys,
             max_items,
         )
         if not selections:
