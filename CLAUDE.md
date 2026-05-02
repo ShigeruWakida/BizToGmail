@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 BizToGmail forwards company email (POP3/IMAP) to Gmail via SMTP. It runs on Cloud Run with a FastAPI web UI that requires Google OAuth login. The logged-in user's Gmail address is automatically used as the forwarding destination.
 
-Cloud stack: Cloud Run, Cloud Scheduler, Cloud SQL (PostgreSQL), Secret Manager.
+Cloud stack: Cloud Run, Cloud Scheduler, Neon (PostgreSQL).
 
 ## Commands
 
@@ -41,7 +41,7 @@ python biztogmail.py scheduler --once
 - `accounts.py` - CRUD for saved mail accounts
 - `db.py` - SQLAlchemy Core tables (`messages`, `accounts`, `account_execution_locks`) with auto-migration. Uses `DATABASE_URL` env var or falls back to local `state.db` (SQLite)
 - `state.py` - Message dedup tracking (UIDL-based for POP3, UID-based for IMAP)
-- `secrets.py` - Google Cloud Secret Manager integration for storing/retrieving mail passwords
+- `secrets.py` - Secret resolution: supports `gcp:` (Secret Manager), `env:` (environment variables), and DB-direct password storage
 - `settings.py` - All config via env vars (see `.env.example`)
 - `pop3_client.py` / `imap_client.py` / `smtp_client.py` - Mail protocol clients
 - `locks.py` - File-based locking for scheduler tick
@@ -56,12 +56,14 @@ python biztogmail.py scheduler --once
 
 ## Key Design Decisions
 
-- Passwords entered in the web UI are stored in Secret Manager; only `secret_ref` pointers are saved in the DB
-- The `/scheduler/tick` endpoint is called every minute by Cloud Scheduler (authenticated via `X-Scheduler-Token` header); it processes only accounts whose `next_check_at` is due
+- Passwords are stored directly in the DB (`pop_password`, `smtp_password` columns). Secret Manager (`gcp:` refs) is also supported but not used in the current production environment
+- `BIZTOGMAIL_GCP_PROJECT` を空文字に設定すると Secret Manager を無効化し、パスワードを DB に直接保存する
+- The `/scheduler/tick` endpoint is called every 10 minutes by Cloud Scheduler (authenticated via `X-Scheduler-Token` header); it processes only accounts whose `next_check_at` is due
 - Account execution uses DB-row-level locking to prevent concurrent runs of the same account
 - Message dedup keys are protocol-aware: `pop3:<uidl>` or `imap:<folder>:<uid>`
 - DB supports both PostgreSQL (production via `DATABASE_URL`) and SQLite (local dev via `state.db`)
 - `db.py` includes inline migrations for schema evolution (ALTER TABLE additions)
+- `db.py` automatically enables SSL for pg8000 connections to external PostgreSQL (e.g. Neon), but not for Cloud SQL unix socket connections
 
 ## Coding Conventions
 
@@ -71,6 +73,22 @@ python biztogmail.py scheduler --once
 - Comments only where POP3/SMTP/IMAP behavior is non-obvious
 - All UI text and comments in the codebase may be in Japanese
 
+## Production Environment
+
+- **Cloud Run**: asia-northeast1, URL: `https://biztogmail-29155682529.asia-northeast1.run.app/`
+- **DB**: Neon PostgreSQL (Singapore). 接続情報は Cloud Run の環境変数 `DATABASE_URL` に直接設定
+- **Cloud Scheduler**: 10分間隔で `/scheduler/tick` を POST
+- **認証情報**: Secret Manager は使わず、すべて Cloud Run の環境変数に直接設定 (`BIZTOGMAIL_SESSION_SECRET`, `BIZTOGMAIL_SCHEDULER_TOKEN`, `GOOGLE_OIDC_CLIENT_SECRET` 等)
+- **GCP Project**: `biztogmail` (ID: `29155682529`)
+
 ## Deployment
 
-Cloud Run deploys use `scripts/deploy-cloud-run.ps1` (PowerShell). Container builds via `gcloud builds submit`. See README.md for full deploy flow.
+```powershell
+# 1. コンテナビルド (プロジェクトルートで実行)
+gcloud builds submit --tag gcr.io/biztogmail/biztogmail --project=biztogmail
+
+# 2. デプロイ
+gcloud run deploy biztogmail --image gcr.io/biztogmail/biztogmail --region asia-northeast1 --project biztogmail
+```
+
+`scripts/deploy-cloud-run.ps1` は旧構成 (Cloud SQL + Secret Manager) 向けのため、現在は上記コマンドを直接使用する。
