@@ -13,7 +13,7 @@ Web UI は Google ログイン必須で、**ログイン中の Google アカウ�
 現在は、次のクラウド構成での利用を前提に整備されています。
 
 - Cloud Run
-- Cloud Scheduler（10分間隔）
+- Cloud Scheduler（5分間隔）
 - Neon PostgreSQL（外部無料枠）
 - Google OAuth（テストユーザー運用）
 
@@ -46,7 +46,7 @@ Web UI は Google ログイン必須で、**ログイン中の Google アカウ�
 - **Cloud Run**
   - Web UI / API 本体
 - **Cloud Scheduler**
-  - `/scheduler/tick` を10分間隔で呼び出す
+  - `/scheduler/tick` を5分間隔で呼び出す
 - **Neon PostgreSQL**
   - アカウント情報、既処理メール情報、排他ロック情報を保存
   - パスワードも DB に直接保存（Secret Manager は不使用）
@@ -182,14 +182,14 @@ Cloud Run の URL に合わせて、OAuth クライアントへ次を追加し�
 ## Cloud Scheduler
 
 Cloud Scheduler は 1 ジョブで十分です。  
-10分間隔で `POST /scheduler/tick` を叩き、アプリ側で due のアカウントだけ実行します。
+5分間隔で `POST /scheduler/tick` を叩き、アプリ側で due のアカウントだけ実行します。
 
 例:
 
 ```powershell
 gcloud scheduler jobs create http biztogmail-tick `
   --location asia-northeast1 `
-  --schedule "*/10 * * * *" `
+  --schedule "*/5 * * * *" `
   --uri "https://<CLOUD_RUN_URL>/scheduler/tick" `
   --http-method POST `
   --headers "X-Scheduler-Token=<BIZTOGMAIL_SCHEDULER_TOKEN>"

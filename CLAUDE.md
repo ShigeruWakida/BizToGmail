@@ -58,7 +58,7 @@ python biztogmail.py scheduler --once
 
 - Passwords are stored directly in the DB (`pop_password`, `smtp_password` columns). Secret Manager (`gcp:` refs) is also supported but not used in the current production environment
 - `BIZTOGMAIL_GCP_PROJECT` を空文字に設定すると Secret Manager を無効化し、パスワードを DB に直接保存する
-- The `/scheduler/tick` endpoint is called every 10 minutes by Cloud Scheduler (authenticated via `X-Scheduler-Token` header); it processes only accounts whose `next_check_at` is due
+- The `/scheduler/tick` endpoint is called every 5 minutes by Cloud Scheduler (authenticated via `X-Scheduler-Token` header); it processes only accounts whose `next_check_at` is due
 - Effective check interval per account is `max(scheduler_interval, account.check_interval_minutes)` — setting an account's interval shorter than the Cloud Scheduler interval has no effect
 - Account execution uses DB-row-level locking to prevent concurrent runs of the same account
 - Message dedup keys are protocol-aware: `pop3:<uidl>` or `imap:<folder>:<uid>`
@@ -80,7 +80,7 @@ python biztogmail.py scheduler --once
 
 - **Cloud Run**: asia-northeast1, URL: `https://biztogmail-29155682529.asia-northeast1.run.app/`
 - **DB**: Neon PostgreSQL (Singapore). 接続情報は Cloud Run の環境変数 `DATABASE_URL` に直接設定
-- **Cloud Scheduler**: 10分間隔で `/scheduler/tick` を POST
+- **Cloud Scheduler**: 5分間隔で `/scheduler/tick` を POST
 - **認証情報**: Secret Manager は使わず、すべて Cloud Run の環境変数に直接設定 (`BIZTOGMAIL_SESSION_SECRET`, `BIZTOGMAIL_SCHEDULER_TOKEN`, `GOOGLE_OIDC_CLIENT_SECRET` 等)
 - **GCP Project**: `biztogmail` (ID: `29155682529`)
 
