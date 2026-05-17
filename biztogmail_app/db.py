@@ -6,6 +6,7 @@ from pathlib import Path
 
 from sqlalchemy import Column, Integer, MetaData, String, Table, Text, create_engine, inspect, text
 from sqlalchemy.engine import Connection, Engine
+from sqlalchemy.pool import NullPool
 
 from .settings import DB_FILE
 
@@ -86,16 +87,18 @@ def get_engine() -> Engine:
             connect_args = {"check_same_thread": False}
             _ENGINE = create_engine(url, future=True, connect_args=connect_args)
         elif _needs_ssl(url):
+            # Neon free tier auto-suspends after 5 min inactivity, which kills
+            # idle pooled connections. NullPool opens a fresh connection per
+            # request so a dead pooled connection can never be reused.
             connect_args = {"ssl_context": ssl.create_default_context()}
             _ENGINE = create_engine(
                 url,
                 future=True,
                 connect_args=connect_args,
-                pool_pre_ping=True,
-                pool_recycle=300,
+                poolclass=NullPool,
             )
         else:
-            _ENGINE = create_engine(url, future=True, pool_pre_ping=True)
+            _ENGINE = create_engine(url, future=True, poolclass=NullPool)
     return _ENGINE
 
 

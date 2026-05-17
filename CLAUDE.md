@@ -66,7 +66,7 @@ python biztogmail.py scheduler --once
 - DB supports both PostgreSQL (production via `DATABASE_URL`) and SQLite (local dev via `state.db`)
 - `db.py` includes inline migrations for schema evolution (ALTER TABLE additions)
 - `db.py` automatically enables SSL for pg8000 connections to external PostgreSQL (e.g. Neon), but not for Cloud SQL unix socket connections
-- For non-SQLite DB connections, `pool_pre_ping=True` and `pool_recycle=300` are enabled. This is required for Neon free tier whose compute auto-suspends after inactivity and breaks idle connections
+- For non-SQLite DB connections, `db.py` uses `NullPool` (no connection pooling — a fresh connection per request). Neon free tier auto-suspends after 5 min of inactivity and kills idle pooled connections; reusing a dead pooled connection caused intermittent 500s on `/scheduler/tick` even with `pool_pre_ping`. NullPool eliminates stale-connection reuse entirely
 
 ## Coding Conventions
 
