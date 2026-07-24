@@ -31,6 +31,7 @@ def run_smtp_forward_workflow(
     delete_after_days: int | None,
     dry_run: bool,
     logger: RunLogger,
+    account_id: int | None = None,
 ):
     logger.append(
         f"smtp-forward start protocol={source_protocol} host={host} user={user} max={max_items} dry_run={dry_run} destination={destination_email}"
@@ -51,11 +52,11 @@ def run_smtp_forward_workflow(
         else:
             client = pop_connect(host, port, use_ssl, user, password)
             entries = pop_uidl_list(client)
-        all_keys = [_source_message_key(normalized_protocol, mailbox, source_id) for _, source_id in entries]
+        all_keys = [_source_message_key(normalized_protocol, mailbox, source_id, account_id) for _, source_id in entries]
         seen_keys = uidls_seen(con, all_keys)
         selections = select_pending_entries(
             entries,
-            lambda source_id: _source_message_key(normalized_protocol, mailbox, source_id) in seen_keys,
+            lambda source_id: _source_message_key(normalized_protocol, mailbox, source_id, account_id) in seen_keys,
             max_items,
         )
         if not selections:
@@ -118,7 +119,7 @@ def run_smtp_forward_workflow(
                     except Exception:
                         note = " (server delete failed)"
 
-                uidl_mark_imported(con, _source_message_key(normalized_protocol, mailbox, source_id), None)
+                uidl_mark_imported(con, _source_message_key(normalized_protocol, mailbox, source_id, account_id), None)
                 events.append(f"- ID={source_id}: Forwarded via SMTP{note} | {subject}")
                 imported += 1
             except Exception as e:
@@ -147,8 +148,17 @@ def run_smtp_forward_workflow(
     }
 
 
-def _source_message_key(source_protocol: str, source_folder: str | None, source_id: str) -> str:
+def _source_message_key(
+    source_protocol: str,
+    source_folder: str | None,
+    source_id: str,
+    account_id: int | None = None,
+) -> str:
     normalized_protocol = (source_protocol or "pop3").lower()
+    # IMAP UID / POP3 UIDL はメールボックス毎の採番なので、同一サーバの複数アカウントを
+    # 転送していると別アカウント間で同じ ID が衝突する。account_id を前置して名前空間を
+    # 分離する。account_id=None（CLI/Web の単発実行）は従来キーのまま。
+    acct = f"acct{account_id}:" if account_id is not None else ""
     if normalized_protocol == "imap":
-        return f"imap:{source_folder or 'INBOX'}:{source_id}"
-    return f"pop3:{source_id}"
+        return f"imap:{acct}{source_folder or 'INBOX'}:{source_id}"
+    return f"pop3:{acct}{source_id}"

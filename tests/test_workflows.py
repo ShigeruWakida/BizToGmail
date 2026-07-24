@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from biztogmail_app.workflows import run_smtp_forward_workflow
+from biztogmail_app.workflows import _source_message_key, run_smtp_forward_workflow
 
 
 class DummyLogger:
@@ -57,3 +57,28 @@ class WorkflowTests(unittest.TestCase):
 
         self.assertEqual(result["summary"]["errors"], 0)
         self.assertTrue(con.closed)
+
+
+class SourceMessageKeyTests(unittest.TestCase):
+    def test_imap_key_without_account_is_legacy_format(self):
+        self.assertEqual(_source_message_key("imap", "INBOX", "1501"), "imap:INBOX:1501")
+
+    def test_pop3_key_without_account_is_legacy_format(self):
+        self.assertEqual(_source_message_key("pop3", None, "abc"), "pop3:abc")
+
+    def test_imap_key_is_namespaced_per_account(self):
+        # 同一サーバの別アカウントで同じ IMAP UID が来ても衝突しないこと
+        self.assertEqual(
+            _source_message_key("imap", "INBOX", "1501", account_id=1),
+            "imap:acct1:INBOX:1501",
+        )
+        self.assertNotEqual(
+            _source_message_key("imap", "INBOX", "1501", account_id=1),
+            _source_message_key("imap", "INBOX", "1501", account_id=4),
+        )
+
+    def test_empty_folder_defaults_to_inbox(self):
+        self.assertEqual(
+            _source_message_key("imap", "", "42", account_id=2),
+            "imap:acct2:INBOX:42",
+        )
