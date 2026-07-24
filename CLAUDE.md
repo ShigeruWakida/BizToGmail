@@ -61,7 +61,7 @@ python biztogmail.py scheduler --once
 - The `/scheduler/tick` endpoint is called every 5 minutes by Cloud Scheduler (authenticated via `X-Scheduler-Token` header); it processes only accounts whose `next_check_at` is due
 - Effective check interval per account is `max(scheduler_interval, account.check_interval_minutes)` — setting an account's interval shorter than the Cloud Scheduler interval has no effect
 - Account execution uses DB-row-level locking to prevent concurrent runs of the same account
-- Message dedup keys are protocol-aware: `pop3:<uidl>` or `imap:<folder>:<uid>`
+- Message dedup keys are protocol-aware **and account-namespaced**: `imap:acct<id>:<folder>:<uid>` or `pop3:acct<id>:<uidl>` (ad-hoc CLI/Web runs with no saved account fall back to the legacy `imap:<folder>:<uid>` / `pop3:<uidl>`). The account prefix is required because IMAP UID / POP3 UIDL are numbered per-mailbox: without it, multiple accounts on the same server share one `imap:INBOX:<uid>` namespace and one account's mail gets silently dropped as a "duplicate" once its UID counter reaches a range another account already imported (see `_source_message_key` in `workflows.py`)
 - Dedup checks are batched: `state.uidls_seen()` does a single `WHERE uidl IN (...)` query (chunked at 1000) rather than one query per message. Required for accounts with thousands of IMAP messages
 - DB supports both PostgreSQL (production via `DATABASE_URL`) and SQLite (local dev via `state.db`)
 - `db.py` includes inline migrations for schema evolution (ALTER TABLE additions)

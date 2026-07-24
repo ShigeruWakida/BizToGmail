@@ -108,6 +108,7 @@ def _run_account_workflow(account: dict, password: str, logger: RunLogger):
         delete_after_days=account["delete_after_days"],
         dry_run=False,
         logger=logger,
+        account_id=account["id"],
     )
 
 
